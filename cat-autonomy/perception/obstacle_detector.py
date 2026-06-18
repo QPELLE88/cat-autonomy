@@ -179,6 +179,52 @@ class PersonnelObstacle(ObstacleBase):
         return None
 
 
+class FallenTreeObstacle(ObstacleBase):
+    """Detects fallen trees using elongated cylindrical profile for forestry/construction expansion."""
+
+    def get_profile_signature(self) -> dict:
+        return {
+            "shape": "horizontal_cylinder",
+            "aspect_ratio_range": (3.0, 10.0),
+            "min_height_m": 0.5,
+            "max_height_m": 2.0,
+            "min_length_m": 5.0,
+            "max_width_m": 1.5,
+        }
+
+    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+        points = cloud.points
+        if len(points) < 30:
+            return None
+
+        bbox = self.compute_bounding_box(points)
+        width = bbox[3] - bbox[0]
+        height = bbox[5] - bbox[2]
+        length = bbox[4] - bbox[1]
+
+        # Check for elongated horizontal cylindrical profile (fallen tree)
+        max_horizontal = max(width, length)
+        min_horizontal = min(width, length)
+        aspect_ratio = max_horizontal / max(min_horizontal, 0.01)
+
+        if (3.0 <= aspect_ratio <= 10.0 and
+            0.5 <= height <= 2.0 and
+            max_horizontal >= 5.0 and
+            min_horizontal <= 1.5):
+            confidence = min(0.92, len(points) / 150.0)
+            if confidence >= self.min_confidence:
+                center = points.mean(axis=0)
+                return DetectionResult(
+                    obstacle_type="fallen_tree",
+                    confidence=confidence,
+                    bounding_box=bbox,
+                    response_action=ResponseAction.REROUTE,
+                    safety_buffer_meters=15.0,
+                    position=tuple(center),
+                )
+        return None
+
+
 # ============================================================
 # OBSTACLE DETECTION PIPELINE
 # ============================================================
@@ -191,6 +237,7 @@ class ObstacleDetectionPipeline:
             RockObstacle(),
             VehicleObstacle(),
             PersonnelObstacle(),
+            FallenTreeObstacle(),
         ]
 
     def register_detector(self, detector: ObstacleBase):

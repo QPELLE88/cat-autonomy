@@ -13,6 +13,7 @@ from perception.obstacle_detector import (
     RockObstacle,
     VehicleObstacle,
     PersonnelObstacle,
+    FallenTreeObstacle,
     PointCloud,
     ResponseAction,
 )
@@ -105,6 +106,50 @@ class TestPersonnelObstacle:
         assert result.obstacle_type == "personnel"
         assert result.response_action == ResponseAction.STOP
         assert result.safety_buffer_meters == 20.0
+
+
+class TestFallenTreeObstacle:
+    def test_detects_fallen_tree(self):
+        # Create an elongated horizontal cylinder (~8m x 1m x 1m)
+        np.random.seed(789)
+        points = np.random.rand(150, 3)
+        points[:, 0] *= 1.0   # 1m wide (trunk diameter)
+        points[:, 1] *= 8.0   # 8m long (tree length)
+        points[:, 2] *= 1.0   # 1m tall (fallen height)
+        points[:, 2] += 0.5   # offset from ground
+        cloud = make_cloud(points)
+
+        detector = FallenTreeObstacle()
+        result = detector.detect(cloud)
+
+        assert result is not None
+        assert result.obstacle_type == "fallen_tree"
+        assert result.response_action == ResponseAction.REROUTE
+        assert result.safety_buffer_meters == 15.0
+
+    def test_rejects_short_object(self):
+        # Too short to be a fallen tree
+        points = np.random.rand(40, 3)
+        points[:, 0] *= 1.0
+        points[:, 1] *= 2.0   # Only 2m long
+        points[:, 2] *= 1.0
+        cloud = make_cloud(points)
+
+        detector = FallenTreeObstacle()
+        result = detector.detect(cloud)
+        assert result is None
+
+    def test_rejects_tall_object(self):
+        # Too tall to be a fallen tree (standing tree)
+        points = np.random.rand(40, 3)
+        points[:, 0] *= 1.0
+        points[:, 1] *= 8.0
+        points[:, 2] *= 5.0   # 5m tall (not fallen)
+        cloud = make_cloud(points)
+
+        detector = FallenTreeObstacle()
+        result = detector.detect(cloud)
+        assert result is None
 
 
 class TestPipeline:

@@ -27,6 +27,7 @@ cat-autonomy/
 | Rock | Spherical, 0.3-3.0m | SLOW | 5m |
 | Vehicle | Rectangular, 1.5-6.0m tall | STOP | 10m |
 | Personnel | Vertical cylinder, 1.2-2.2m | STOP | 20m |
+| FallenTree | Horizontal cylinder, 5.0m+ length | REROUTE | 15m |
 
 ## Running Tests
 
@@ -43,6 +44,5 @@ python simulation/scenario_generator.py
 
 ## TODO
 
-- [ ] Add FallenTree obstacle detector for forestry/construction expansion
 - [ ] Generate simulation scenarios for new obstacle types
 - [ ] Build fleet dashboard widget for obstacle event monitoring
