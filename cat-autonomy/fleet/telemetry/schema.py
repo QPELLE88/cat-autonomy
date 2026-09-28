@@ -4,7 +4,6 @@ Defines the data structures for truck telemetry events
 streamed from autonomous vehicles to the fleet management platform.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
@@ -60,7 +59,7 @@ class ObstacleEvent:
     distance_to_obstacle_m: float
     severity: EventSeverity
     resolved: bool = False
-    resolution_time_s: Optional[float] = None
+    resolution_time_s: float | None = None
 
 
 @dataclass
@@ -69,7 +68,7 @@ class FleetAlert:
     alert_id: str
     alert_type: str
     timestamp: datetime
-    affected_trucks: List[str]
+    affected_trucks: list[str]
     gps_center: GPSCoordinate
     radius_m: float
     description: str
@@ -85,4 +84,4 @@ class DashboardWidget:
     title: str
     data_source: str
     refresh_interval_s: int = 5
-    filters: dict = field(default_factory=dict)
+    filters: dict[str, object] = field(default_factory=dict)
