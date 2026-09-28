@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cat-autonomy"
+version = "0.1.0"
+description = "CAT Autonomous Truck Platform: perception, simulation, and fleet monitoring for autonomous mining and construction trucks"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+include = ["perception*", "simulation*", "fleet*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

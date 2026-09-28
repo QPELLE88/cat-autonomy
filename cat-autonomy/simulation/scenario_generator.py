@@ -7,7 +7,6 @@ and expected autonomous response.
 import yaml
 import os
 from dataclasses import dataclass, asdict
-from typing import List, Optional
 from enum import Enum
 
 
@@ -62,12 +61,12 @@ class SimScenario:
     weather: str
     visibility_m: float
     truck_state: TruckState
-    obstacles: List[ObstaclePlacement]
+    obstacles: list[ObstaclePlacement]
     expected_response: ExpectedResponse
-    pass_criteria: dict
+    pass_criteria: dict[str, bool]
 
 
-def generate_rock_scenarios(output_dir: str, count: int = 10) -> List[str]:
+def generate_rock_scenarios(output_dir: str, count: int = 10) -> list[str]:
     """Generate standard rock obstacle scenarios."""
     scenarios = []
     os.makedirs(output_dir, exist_ok=True)
@@ -111,7 +110,7 @@ def generate_rock_scenarios(output_dir: str, count: int = 10) -> List[str]:
     return scenarios
 
 
-def generate_vehicle_scenarios(output_dir: str, count: int = 10) -> List[str]:
+def generate_vehicle_scenarios(output_dir: str, count: int = 10) -> list[str]:
     """Generate vehicle obstacle scenarios (parked trucks, excavators)."""
     scenarios = []
     os.makedirs(output_dir, exist_ok=True)

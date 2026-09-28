@@ -29,6 +29,17 @@ cat-autonomy/
 | Personnel | Vertical cylinder, 1.2-2.2m | STOP | 20m |
 | FallenTree | Horizontal cylinder, 5.0m+ length | REROUTE | 15m |
 
+## Requirements
+
+Python 3.12+ is required (declared in `pyproject.toml` and `.python-version`).
+
+Install dependencies from the `cat-autonomy/` directory with either:
+
+```bash
+pip install -e ".[dev]"          # from pyproject.toml (runtime + pytest)
+pip install -r requirements.txt  # convenience alternative
+```
+
 ## Running Tests
 
 ```bash

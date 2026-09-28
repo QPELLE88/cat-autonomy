@@ -6,8 +6,10 @@ in the autonomous truck's path.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
 import numpy as np
+
+
+type ProfileSignature = dict[str, str | float | tuple[float, float]]
 
 
 class ResponseAction(Enum):
@@ -32,10 +34,10 @@ class DetectionResult:
     """Result of obstacle detection."""
     obstacle_type: str
     confidence: float
-    bounding_box: tuple  # (x_min, y_min, z_min, x_max, y_max, z_max)
+    bounding_box: tuple[float, ...]  # (x_min, y_min, z_min, x_max, y_max, z_max)
     response_action: ResponseAction
     safety_buffer_meters: float
-    position: tuple  # (x, y, z) center
+    position: tuple[float, ...]  # (x, y, z) center
 
 
 class ObstacleBase(ABC):
@@ -45,16 +47,16 @@ class ObstacleBase(ABC):
         self.min_confidence = min_confidence
 
     @abstractmethod
-    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+    def detect(self, cloud: PointCloud) -> DetectionResult | None:
         """Detect this obstacle type in the given point cloud."""
         pass
 
     @abstractmethod
-    def get_profile_signature(self) -> dict:
+    def get_profile_signature(self) -> ProfileSignature:
         """Return the geometric profile signature for this obstacle type."""
         pass
 
-    def compute_bounding_box(self, points: np.ndarray) -> tuple:
+    def compute_bounding_box(self, points: np.ndarray) -> tuple[float, ...]:
         """Compute axis-aligned bounding box for a point cluster."""
         mins = points.min(axis=0)
         maxs = points.max(axis=0)
@@ -64,7 +66,7 @@ class ObstacleBase(ABC):
 class RockObstacle(ObstacleBase):
     """Detects rock obstacles using compact spherical profile matching."""
 
-    def get_profile_signature(self) -> dict:
+    def get_profile_signature(self) -> ProfileSignature:
         return {
             "shape": "spherical",
             "aspect_ratio_range": (0.6, 1.4),
@@ -72,7 +74,7 @@ class RockObstacle(ObstacleBase):
             "max_height_m": 3.0,
         }
 
-    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+    def detect(self, cloud: PointCloud) -> DetectionResult | None:
         points = cloud.points
         if len(points) < 10:
             return None
@@ -102,7 +104,7 @@ class RockObstacle(ObstacleBase):
 class VehicleObstacle(ObstacleBase):
     """Detects vehicles (trucks, excavators, loaders) using rectangular profile."""
 
-    def get_profile_signature(self) -> dict:
+    def get_profile_signature(self) -> ProfileSignature:
         return {
             "shape": "rectangular",
             "aspect_ratio_range": (1.5, 4.0),
@@ -111,7 +113,7 @@ class VehicleObstacle(ObstacleBase):
             "min_length_m": 3.0,
         }
 
-    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+    def detect(self, cloud: PointCloud) -> DetectionResult | None:
         points = cloud.points
         if len(points) < 50:
             return None
@@ -142,7 +144,7 @@ class VehicleObstacle(ObstacleBase):
 class PersonnelObstacle(ObstacleBase):
     """Detects personnel/humans using tall narrow vertical profile."""
 
-    def get_profile_signature(self) -> dict:
+    def get_profile_signature(self) -> ProfileSignature:
         return {
             "shape": "vertical_cylinder",
             "aspect_ratio_range": (0.2, 0.6),
@@ -151,7 +153,7 @@ class PersonnelObstacle(ObstacleBase):
             "max_width_m": 1.0,
         }
 
-    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+    def detect(self, cloud: PointCloud) -> DetectionResult | None:
         points = cloud.points
         if len(points) < 20:
             return None
@@ -182,7 +184,7 @@ class PersonnelObstacle(ObstacleBase):
 class FallenTreeObstacle(ObstacleBase):
     """Detects fallen trees using elongated cylindrical profile for forestry/construction expansion."""
 
-    def get_profile_signature(self) -> dict:
+    def get_profile_signature(self) -> ProfileSignature:
         return {
             "shape": "horizontal_cylinder",
             "aspect_ratio_range": (3.0, 10.0),
@@ -192,7 +194,7 @@ class FallenTreeObstacle(ObstacleBase):
             "max_width_m": 1.5,
         }
 
-    def detect(self, cloud: PointCloud) -> Optional[DetectionResult]:
+    def detect(self, cloud: PointCloud) -> DetectionResult | None:
         points = cloud.points
         if len(points) < 30:
             return None
@@ -233,7 +235,7 @@ class ObstacleDetectionPipeline:
     """Main pipeline that runs all obstacle detectors against incoming LiDAR data."""
 
     def __init__(self):
-        self.detectors: List[ObstacleBase] = [
+        self.detectors: list[ObstacleBase] = [
             RockObstacle(),
             VehicleObstacle(),
             PersonnelObstacle(),
@@ -244,7 +246,7 @@ class ObstacleDetectionPipeline:
         """Register a new obstacle detector to the pipeline."""
         self.detectors.append(detector)
 
-    def process_frame(self, clouds: List[PointCloud]) -> List[DetectionResult]:
+    def process_frame(self, clouds: list[PointCloud]) -> list[DetectionResult]:
         """Process a single LiDAR frame (multiple point cloud clusters)."""
         results = []
         for cloud in clouds:
@@ -255,7 +257,7 @@ class ObstacleDetectionPipeline:
                     break  # First match wins for this cluster
         return results
 
-    def get_highest_priority_action(self, results: List[DetectionResult]) -> ResponseAction:
+    def get_highest_priority_action(self, results: list[DetectionResult]) -> ResponseAction:
         """Determine the highest priority response action from all detections."""
         priority = [ResponseAction.STOP, ResponseAction.REROUTE,
                     ResponseAction.SLOW, ResponseAction.ALERT_OPERATOR]
